@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Science for Grade 4 — Flipbook</title>
+<style>
+  :root{
+    --ink:#14181d; --cream:#fff8ec; --navy:#173a5e; --green:#145c33; --gold:#c79a3b;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;background:#1c150f;font-family:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;}
+  body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;}
+
+  header{
+    flex:0 0 auto; display:flex; align-items:center; gap:.6rem;
+    background:var(--navy); color:#fff; padding:.45rem .8rem;
+    box-shadow:0 2px 8px rgba(0,0,0,.35); z-index:5;
+  }
+  header .titles{flex:1 1 auto; min-width:0; line-height:1.15;}
+  header .book{font-weight:700; font-size:1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  header .by{font-size:.78rem; color:#ffd98a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  header a.games{
+    flex:0 0 auto; text-decoration:none; background:var(--gold); color:#231a04;
+    font-weight:700; font-size:.85rem; padding:.5rem .8rem; border-radius:999px;
+    box-shadow:0 2px 0 #8a6d1c;
+  }
+  header a.games:active{transform:translateY(1px); box-shadow:none;}
+  #sndbtn{
+    flex:0 0 auto; background:#37506e; color:#fff; border:0; border-radius:999px; cursor:pointer;
+    font-size:1rem; line-height:1; padding:.5rem .65rem; box-shadow:0 2px 0 #22364d;
+  }
+  #sndbtn:active{transform:translateY(1px); box-shadow:none;}
+
+  #stage{
+    flex:1 1 auto; position:relative; display:flex; align-items:center; justify-content:center;
+    overflow:hidden; touch-action:manipulation; user-select:none; -webkit-user-select:none;
+    background:radial-gradient(ellipse at 50% 42%,#4a3a2c 0%,#2c2119 62%,#1c150f 100%);
+  }
+  #bookwrap{
+    position:relative; display:flex; align-items:center; justify-content:center;
+  }
+  /* The book: one portrait page, spine on the left. The turning sheet is a
+     direct child so it inherits this perspective. */
+  #book{
+    position:relative; perspective:1500px;
+    background:#f7efe0; border-radius:3px 9px 9px 3px;
+    box-shadow:0 26px 60px rgba(0,0,0,.55), 0 5px 16px rgba(0,0,0,.45);
+    touch-action:none; -webkit-touch-callout:none; cursor:pointer;
+  }
+  .layer{position:absolute; inset:0; width:100%; height:100%;}
+  #under{display:block; background:#fff; z-index:1;}
+  #spineShade{
+    z-index:2; pointer-events:none;
+    background:
+      linear-gradient(to left, rgba(120,90,40,.20) 0, rgba(120,90,40,0) 6px),
+      linear-gradient(to right, rgba(60,35,10,.30) 0, rgba(60,35,10,.10) 14px, rgba(60,35,10,0) 36px);
+  }
+  #underShadow{
+    z-index:3; pointer-events:none; opacity:0;
+    background:linear-gradient(to right, rgba(24,12,0,.88) 0%, rgba(24,12,0,.38) 34%, rgba(24,12,0,0) 72%);
+  }
+  #sheet{
+    z-index:4; display:none; pointer-events:none;
+    transform-origin: right center; transform-style:preserve-3d; will-change:transform;
+  }
+  #sheet .face{
+    position:absolute; inset:0; overflow:hidden; background:#fff;
+    backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  }
+  #sheet .face.back{transform:rotateY(180deg);}
+  #sheet .face img{display:block; width:100%; height:100%;}
+  #sheet .face .shade{
+    position:absolute; inset:0; pointer-events:none; opacity:.12;
+    background:linear-gradient(to right,
+      rgba(0,0,0,.34) 0%, rgba(0,0,0,.05) 28%, rgba(255,255,255,.15) 52%,
+      rgba(0,0,0,.05) 76%, rgba(0,0,0,.32) 100%);
+  }
+  .hint{
+    position:absolute; top:50%; margin-top:-1.2rem; width:2.4rem; height:2.4rem; border-radius:50%;
+    background:rgba(20,24,29,.45); color:#fff; font-size:1.35rem; line-height:2.4rem;
+    text-align:center; opacity:.55; pointer-events:none; z-index:5;
+  }
+  .hint.left{left:.35rem;} .hint.right{right:.35rem;}
+
+  footer{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:.6rem;
+    background:var(--navy); color:#fff; padding:.5rem .8rem; z-index:5;
+    box-shadow:0 -2px 8px rgba(0,0,0,.35);
+  }
+  footer button{
+    background:var(--green); color:#fff; border:0; border-radius:999px; cursor:pointer;
+    font-size:1rem; font-weight:700; padding:.6rem 1.1rem; min-width:3.2rem;
+    box-shadow:0 2px 0 #0c3d21;
+  }
+  footer button:active{transform:translateY(1px); box-shadow:none;}
+  footer button:disabled{opacity:.35; box-shadow:none;}
+  #counter{font-size:.95rem; font-weight:600; letter-spacing:.02em; white-space:nowrap;}
+  #fsbtn{background:#37506e; box-shadow:0 2px 0 #22364d; padding:.6rem .8rem;}
+
+
+
+  /* big floating zoom button + compact footer on small screens */
+  #zoomfab{position:fixed; right:.8rem; bottom:5.4rem; width:58px; height:58px; border-radius:50%;
+    background:var(--gold); color:#173a5e; border:3px solid #fff; font-size:1.55rem; cursor:pointer;
+    box-shadow:0 4px 12px rgba(0,0,0,.45); z-index:40;}
+  #zoomfab:active{transform:translateY(2px);}
+  @media (max-width:560px){
+    footer{gap:.35rem; padding:.45rem .5rem;}
+    footer button{padding:.5rem .55rem; font-size:.85rem; min-width:2.3rem;}
+    #counter{font-size:.78rem;}
+    #fsbtn{padding:.5rem .5rem;}
+  }
+  /* ---------- zoom viewer ---------- */
+  #zoomview{position:fixed; inset:0; background:#0b1220; z-index:60; display:none; overflow:hidden; touch-action:none;}
+  #zoomview.open{display:block;}
+  #zoomimg{position:absolute; left:50%; top:50%; max-width:100%; max-height:100%; transform-origin:center center; user-select:none; -webkit-user-drag:none;}
+  #zoombar{position:absolute; left:0; right:0; bottom:0; display:flex; justify-content:center; gap:.5rem; padding:.6rem; z-index:2;}
+  #zoombar button{background:var(--navy); color:#fff; border:2px solid var(--gold); border-radius:999px; min-width:3rem; padding:.45rem .8rem; font-size:1.05rem; cursor:pointer;}
+  #zoomlbl{position:absolute; top:.6rem; left:50%; transform:translateX(-50%); background:rgba(11,18,32,.75); color:#ffe9b8; padding:.25rem .8rem; border-radius:999px; font-size:.9rem; z-index:2;}
+  #loader{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#ffe9b8; font-size:1rem; z-index:2; pointer-events:none; transition:opacity .3s;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="titles">
+    <div class="book">اردو قاعدہ — پہلا قدم</div>
+    <div class="by">Prepared by: Zulfiqar Ali Sajid</div>
+  </div>
+  <button id="sndbtn" aria-label="Turn page sound on or off" title="Page sound">🔊</button>
+  
+</header>
+
+<div id="stage">
+  <div id="loader">کتاب کھل رہی ہے…</div>
+  <div id="bookwrap">
+    <div id="book">
+      <img id="under" class="layer" alt="Book page" draggable="false"/>
+      <div id="spineShade" class="layer"></div>
+      <div id="underShadow" class="layer"></div>
+      <div id="sheet" class="layer">
+        <div class="face front"><img id="frontImg" alt="" draggable="false"/><div class="shade" id="frontShade"></div></div>
+        <div class="face back"><img id="backImg" alt="" draggable="false"/><div class="shade" id="backShade"></div></div>
+      </div>
+      <div class="hint left">›</div>
+      <div class="hint right">‹</div>
+    </div>
+  </div>
+</div>
+
+
+<button id="zoomfab" aria-label="Zoom this page" title="Zoom">🔍</button>
+<div id="zoomview" aria-label="Zoomed page view">
+  <div id="zoomlbl">زوم: دو انگلیاں یا + / − · گھسیٹ کر حرکت دیں</div>
+  <img id="zoomimg" alt="Zoomed book page" draggable="false"/>
+  <div id="zoombar">
+    <button id="zout" aria-label="Zoom out">−</button>
+    <button id="zin" aria-label="Zoom in">+</button>
+    <button id="zreset" aria-label="Reset zoom">⟲</button>
+    <button id="zclose" aria-label="Close zoom">✕ بند کریں</button>
+  </div>
+</div>
+
+<footer>
+  <button id="nextBtn" aria-label="Next page">← اگلا</button>
+  <div id="counter">صفحہ 1 / 2</div>
+  <button id="zoombtn" aria-label="Zoom this page" title="Zoom">🔍</button>
+  <button id="fsbtn" aria-label="Fullscreen">⛶</button>
+  <button id="prevBtn" aria-label="Previous page">پچھلا →</button>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var TOTAL = 2;
+  var RATIO = 1275 / 1650;               /* page width / height */
+  var FLIP_MS = 600;                     /* full animated turn */
+  var COMPLETE_AT = 0.35;                /* drag release past 35% completes */
+
+  var cur = 1;
+  var busy = false;                      /* an animation or a live drag owns the book */
+
+  var stage      = document.getElementById('stage');
+  var book       = document.getElementById('book');
+  var under      = document.getElementById('under');
+  var sheet      = document.getElementById('sheet');
+  var frontImg   = document.getElementById('frontImg');
+  var backImg    = document.getElementById('backImg');
+  var frontShade = document.getElementById('frontShade');
+  var backShade  = document.getElementById('backShade');
+  var underShadow= document.getElementById('underShadow');
+  var counter    = document.getElementById('counter');
+  var prevBtn    = document.getElementById('prevBtn');
+  var nextBtn    = document.getElementById('nextBtn');
+  var loader     = document.getElementById('loader');
+  var sndBtn     = document.getElementById('sndbtn');
+  var cache = {};
+
+  function src(n){ return 'pages/p' + n + '.jpg'; }
+  function preload(n){
+    if(n < 1 || n > TOTAL || cache[n]) return;
+    var im = new Image(); im.src = src(n); cache[n] = im;
+  }
+  function preloadAround(){
+    preload(cur - 2); preload(cur - 1); preload(cur + 1); preload(cur + 2);
+  }
+
+  /* ---------- page-turn sound: soft filtered-noise whoosh, code-made ---- */
+  var AC = window.AudioContext || window.webkitAudioContext;
+  var actx = null, soundOn = true;
+  function ensureAudio(){
+    if(!AC) return null;
+    try{
+      if(!actx) actx = new AC();
+      if(actx.state === 'suspended') actx.resume();
+    }catch(e){ return null; }
+    return actx;
+  }
+  function whoosh(){
+    if(!soundOn) return;
+    var ctx = ensureAudio(); if(!ctx) return;
+    try{
+      var dur = 0.38, sr = ctx.sampleRate;
+      var buf = ctx.createBuffer(1, Math.floor(sr * dur), sr);
+      var d = buf.getChannelData(0);
+      for(var i = 0; i < d.length; i++){ d[i] = Math.random() * 2 - 1; }
+      var node = ctx.createBufferSource(); node.buffer = buf;
+      var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.9;
+      var t = ctx.currentTime;
+      bp.frequency.setValueAtTime(480, t);
+      bp.frequency.exponentialRampToValueAtTime(1650, t + dur * 0.55);
+      bp.frequency.exponentialRampToValueAtTime(620, t + dur);
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.20, t + dur * 0.35);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      node.connect(bp); bp.connect(g); g.connect(ctx.destination);
+      node.start(t); node.stop(t + dur + 0.05);
+    }catch(e){}
+  }
+  sndBtn.addEventListener('click', function(){
+    soundOn = !soundOn;
+    sndBtn.textContent = soundOn ? '🔊' : '🔇';
+    ensureAudio();
+  });
+
+  /* ---------- layout: size the book to the stage, keeping page ratio ---- */
+  function fit(){
+    var r = stage.getBoundingClientRect();
+    var aw = Math.max(60, r.width - 14);
+    var ah = Math.max(60, r.height - 18);
+    var w = Math.min(aw, ah * RATIO);
+    book.style.width  = w + 'px';
+    book.style.height = (w / RATIO) + 'px';
+  }
+  window.addEventListener('resize', fit);
+
+  /* ---------- static page / counter / hash ------------------------------ */
+  function render(){
+    under.src = src(cur);
+    counter.textContent = 'صفحہ ' + cur + ' / ' + TOTAL;
+    prevBtn.disabled = (cur === 1);
+    nextBtn.disabled = (cur === TOTAL);
+    if(window.location.hash !== '#p' + cur){
+      try{ history.replaceState(null, '', '#p' + cur); }catch(e){}
+    }
+    preloadAround();
+  }
+
+  /* ---------- the turning sheet ------------------------------------------ *
+     The sheet pivots on the spine (left edge). NEXT: front = page being
+     left, back = page being revealed, angle 0 -> -180, and the revealed
+     page sits on the static layer underneath from the start. PREV is the
+     mirror: the sheet starts flipped onto the left stack (angle -180, its
+     back face = the page being left) and falls back onto the book, its
+     front face = the page being revealed, angle -180 -> 0.               */
+  var angle = 0;
+  function setAngle(a){
+    angle = a;
+    sheet.style.transform = 'rotateY(' + a + 'deg)';
+    var s = Math.sin(Math.abs(a) * Math.PI / 180);   /* 0 flat, 1 edge-on */
+    var op = (0.12 + 0.88 * s).toFixed(3);
+    frontShade.style.opacity = op;
+    backShade.style.opacity  = op;
+    underShadow.style.opacity = (s * 0.42).toFixed(3);
+  }
+  function prepSheet(dir){
+    var target = (dir > 0) ? cur + 1 : cur - 1;
+    if(dir > 0){
+      frontImg.src = src(cur);
+      backImg.src  = src(target);
+      under.src    = src(target);      /* revealed as the sheet lifts */
+    }else{
+      frontImg.src = src(target);
+      backImg.src  = src(cur);
+      /* under keeps showing cur: it is uncovered again if the turn cancels */
+    }
+    sheet.style.transition = 'none';
+    sheet.style.opacity = '1';
+    sheet.style.display = 'block';
+    setAngle(dir > 0 ? 0 : 180);
+    return target;
+  }
+  function hideSheet(){
+    sheet.style.display = 'none';
+    underShadow.style.opacity = '0';
+  }
+  function easeInOut(k){ return k < .5 ? 4*k*k*k : 1 - Math.pow(-2*k + 2, 3) / 2; }
+  function easeOut(k){ return 1 - Math.pow(1 - k, 3); }
+  function animTo(to, dur, ease, done){
+    var from = angle, t0 = performance.now();
+    function frame(t){
+      var k = Math.min(1, (t - t0) / dur);
+      setAngle(from + (to - from) * ease(k));
+      if(k < 1){ requestAnimationFrame(frame); }
+      else if(done){ done(); }
+    }
+    requestAnimationFrame(frame);
+  }
+  function commitTurn(dir, target){
+    cur = target;
+    render();
+    if(dir > 0){
+      /* the turned sheet now lies on the left showing the same page the
+         static layer shows — fade it away so the hand-over is invisible */
+      sheet.style.transition = 'opacity .13s ease';
+      sheet.style.opacity = '0';
+      setTimeout(function(){
+        hideSheet();
+        sheet.style.transition = 'none';
+        sheet.style.opacity = '1';
+        busy = false;
+      }, 140);
+    }else{
+      hideSheet();
+      busy = false;
+    }
+  }
+  function cancelTurn(dir){
+    /* sheet is back at its rest angle; for NEXT the static layer was
+       pre-set to the target, so restore the page we never left */
+    if(dir > 0){ under.src = src(cur); }
+    hideSheet();
+    busy = false;
+  }
+  function finishTurn(dir, target, fromDrag){
+    whoosh();
+    var rest = (dir > 0) ? 180 : 0;
+    var span = Math.abs(rest - angle) / 180;
+    var dur = fromDrag ? Math.max(150, 480 * span) : FLIP_MS;
+    animTo(rest, dur, fromDrag ? easeOut : easeInOut, function(){
+      commitTurn(dir, target);
+    });
+  }
+  function animatedTurn(dir){
+    if(busy) return;
+    var target = (dir > 0) ? cur + 1 : cur - 1;
+    if(target < 1 || target > TOTAL) return;
+    busy = true;
+    prepSheet(dir);
+    finishTurn(dir, target, false);
+  }
+  function next(){ animatedTurn(1); }
+  function prev(){ animatedTurn(-1); }
+
+  /* ---------- drag to turn ------------------------------------------------
+     The sheet follows the pointer: progress is anchored at the grab point
+     so the page never jumps. Release past 35% completes the turn, release
+     before springs the sheet back. A press with almost no movement is a
+     tap and runs the full animated turn. At the first/last page there is
+     no sheet — the page itself tilts a few degrees against the drag and
+     springs back (edge resistance).                                       */
+  var drag = null;
+  book.addEventListener('pointerdown', function(e){
+    ensureAudio();
+    if(busy || drag) return;
+    var r = book.getBoundingClientRect();
+    var dir = (e.clientX - r.left) < r.width / 2 ? 1 : -1;
+    var feasible = (dir > 0) ? (cur < TOTAL) : (cur > 1);
+    drag = {
+      id: e.pointerId, dir: dir, feasible: feasible,
+      startX: e.clientX, r0: (e.clientX - r.left) / r.width,
+      active: false, target: feasible ? cur + dir : cur
+    };
+    if(feasible){
+      busy = true;
+      prepSheet(dir);            /* sheet waits at its rest angle under the finger */
+    }
+    if(book.setPointerCapture){ try{ book.setPointerCapture(e.pointerId); }catch(err){} }
+    e.preventDefault();
+  });
+  book.addEventListener('pointermove', function(e){
+    if(!drag || e.pointerId !== drag.id) return;
+    var dx = e.clientX - drag.startX;
+    if(!drag.active && Math.abs(dx) < 7) return;
+    drag.active = true;
+    var r = book.getBoundingClientRect();
+    var ratio = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    if(drag.feasible){
+      var p;
+      if(drag.dir > 0){ p = (ratio - drag.r0) / Math.max(1 - drag.r0, 0.01); }
+      else            { p = (drag.r0 - ratio) / Math.max(drag.r0, 0.01); }
+      p = Math.min(1, Math.max(0, p));
+      drag.p = p;
+      /* NEXT sweeps 0 -> -180 as p goes 0 -> 1; PREV sweeps -180 -> 0 */
+      if(drag.dir > 0){ setAngle(180 * p); } else { setAngle(180 - 180 * p); }
+    }else{
+      var tilt = Math.max(-6, Math.min(6, dx * 0.045));
+      under.style.transition = 'none';
+      under.style.transformOrigin = 'right center';
+      under.style.transform = 'rotateY(' + tilt + 'deg)';
+    }
+  });
+  function endDrag(e, cancelled){
+    if(!drag || e.pointerId !== drag.id) return;
+    var d = drag; drag = null;
+    if(!d.feasible){
+      under.style.transition = 'transform .25s ease';
+      under.style.transform = '';
+      return;
+    }
+    if(cancelled || !d.active){
+      if(!d.active && !cancelled){ finishTurn(d.dir, d.target, false); return; }  /* tap */
+      animTo(d.dir > 0 ? 0 : 180, 300, easeOut, function(){ cancelTurn(d.dir); });
+      return;
+    }
+    if(d.p >= COMPLETE_AT){
+      finishTurn(d.dir, d.target, true);
+    }else{
+      animTo(d.dir > 0 ? 0 : 180, 300, easeOut, function(){ cancelTurn(d.dir); });
+    }
+  }
+  book.addEventListener('pointerup',     function(e){ endDrag(e, false); });
+  book.addEventListener('pointercancel', function(e){ endDrag(e, true);  });
+  book.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+  /* ---------- buttons, keys, fullscreen ----------------------------------- */
+  nextBtn.addEventListener('click', next);
+  prevBtn.addEventListener('click', prev);
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowLeft' || e.key === ' '){ next(); e.preventDefault(); }
+    else if(e.key === 'ArrowRight'){ prev(); e.preventDefault(); }
+  });
+  var fsBtn = document.getElementById('fsbtn');
+  fsBtn.addEventListener('click', function(){
+    var el = document.documentElement;
+    if(document.fullscreenElement){ document.exitFullscreen(); }
+    else if(el.requestFullscreen){ el.requestFullscreen(); }
+    else if(el.webkitRequestFullscreen){ el.webkitRequestFullscreen(); }
+  });
+
+  under.addEventListener('load', function(){ loader.style.opacity = '0'; });
+
+  /* a #pN link followed while the book is already open jumps straight there */
+  window.addEventListener('hashchange', function(){
+    var mm = /#p(\d+)/.exec(window.location.hash || '');
+    if(!mm || busy) return;
+    var n = Math.min(TOTAL, Math.max(1, parseInt(mm[1], 10) || 1));
+    if(n !== cur){ hideSheet(); cur = n; render(); }
+  });
+
+
+  /* ---------- zoom viewer: pinch, drag, buttons, wheel, double-tap ------- */
+  var zoomView = document.getElementById('zoomview');
+  var zoomImg  = document.getElementById('zoomimg');
+  var zScale = 1, zX = 0, zY = 0;
+  function applyZoom(){
+    zoomImg.style.transform = 'translate(-50%,-50%) translate(' + zX + 'px,' + zY + 'px) scale(' + zScale + ')';
+  }
+  function resetZoom(){ zScale = 1; zX = 0; zY = 0; applyZoom(); }
+  function setZoom(s, cx, cy){
+    s = Math.min(4, Math.max(1, s));
+    if(s === 1){ resetZoom(); return; }
+    zScale = s; applyZoom();
+  }
+  function openZoom(){ zoomImg.src = src(cur); resetZoom(); zoomView.classList.add('open'); }
+  function closeZoom(){ zoomView.classList.remove('open'); }
+  document.getElementById('zoombtn').addEventListener('click', openZoom);
+  document.getElementById('zoomfab').addEventListener('click', openZoom);
+  document.getElementById('zclose').addEventListener('click', closeZoom);
+  document.getElementById('zin').addEventListener('click', function(){ setZoom(zScale * 1.3); });
+  document.getElementById('zout').addEventListener('click', function(){ setZoom(zScale / 1.3); });
+  document.getElementById('zreset').addEventListener('click', resetZoom);
+  zoomView.addEventListener('wheel', function(e){ e.preventDefault(); setZoom(zScale * (e.deltaY < 0 ? 1.12 : 0.89)); }, {passive:false});
+  var zPtrs = {}, zLastDist = 0, zDrag = null, zTapT = 0;
+  zoomView.addEventListener('pointerdown', function(e){
+    zPtrs[e.pointerId] = {x:e.clientX, y:e.clientY};
+    if(Object.keys(zPtrs).length === 1){ zDrag = {x:e.clientX, y:e.clientY}; }
+    zLastDist = 0;
+  });
+  zoomView.addEventListener('pointermove', function(e){
+    if(!zPtrs[e.pointerId]) return;
+    zPtrs[e.pointerId] = {x:e.clientX, y:e.clientY};
+    var ids = Object.keys(zPtrs);
+    if(ids.length === 2){
+      var a = zPtrs[ids[0]], b = zPtrs[ids[1]];
+      var d = Math.hypot(a.x - b.x, a.y - b.y);
+      if(zLastDist > 0){ setZoom(zScale * d / zLastDist); }
+      zLastDist = d; zDrag = null;
+    } else if(ids.length === 1 && zDrag && zScale > 1){
+      zX += e.clientX - zDrag.x; zY += e.clientY - zDrag.y;
+      zDrag = {x:e.clientX, y:e.clientY}; applyZoom();
+    }
+  });
+  function zEnd(e){
+    delete zPtrs[e.pointerId];
+    if(Object.keys(zPtrs).length === 0){
+      var now = Date.now();
+      if(now - zTapT < 320 && !zLastDist){ setZoom(zScale > 1 ? 1 : 2.2); }
+      zTapT = now; zDrag = null; zLastDist = 0;
+    }
+  }
+  zoomView.addEventListener('pointerup', zEnd);
+  zoomView.addEventListener('pointercancel', zEnd);
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeZoom(); });
+
+  /* ---------- open --------------------------------------------------------- */
+  var start = 1;
+  var m = /#p(\d+)/.exec(window.location.hash || '');
+  if(m){ start = parseInt(m[1], 10) || 1; }
+  cur = Math.min(TOTAL, Math.max(1, start));
+  fit();
+  render();
+})();
+</script>
+</body>
+</html>
